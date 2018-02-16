@@ -58,3 +58,21 @@ class Racer:
             return 0
         
         return self.total / self.count
+
+    """
+    Returns the best time over all laps by this racer.
+    """
+    def best_time(self):
+        if self.count == 0:
+            return 0
+        
+        return sorted(self.laps.values(), key=lambda k:k.time)[0].time
+
+    """
+    String representation of the info of the racer.
+    """
+    def get_log(self):
+        s = self.name + "\n" + str(self.count) + "\n"
+        for lap in self.laps.values():
+            s += lap.get_log()
+        return s

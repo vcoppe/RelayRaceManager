@@ -25,3 +25,9 @@ class Timer:
         total = self.end - self.begin
         self.begin = self.end
         return total
+
+    """
+    Returns the current time.
+    """
+    def current(self):
+        return time.time()

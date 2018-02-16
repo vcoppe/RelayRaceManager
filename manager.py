@@ -2,6 +2,8 @@ from racer import Racer
 from lap import Lap
 from timer import Timer
 from queue import PriorityQueue
+import datetime
+import os
 
 class Manager:
 
@@ -28,13 +30,29 @@ class Manager:
     """
     def add_racer(self, name):
         if name in self.racers_id:
-            return -1
+            return self.racers_id[name]
         
         racer = Racer(name, self.new_racer_id())
         self.racers[racer.id] = racer
         self.racers_id[racer.name] = racer.id
         
         return racer.id
+
+    """
+    Modifies a racer.
+    """
+    def rename_racer(self, name, newname):
+        if name not in self.racers_id:
+            return
+        if newname in self.racers_id:
+            return
+
+        racer_id = self.racers_id[name]
+        racer = self.racers[racer_id]
+
+        racer.name = newname
+        self.racers_id[newname] = racer_id
+        del self.racers_id[name]
 
     """
     Deletes a racer from the team.
@@ -267,3 +285,44 @@ class Manager:
             self.last_laps.pop(0)
 
         self.last_laps.append((lap_id, racer_id))
+
+    """
+    Logs the current state.
+    """
+    def print_log(self):
+        path = "logs/" + datetime.datetime.fromtimestamp(self.timer.current()).strftime('%d_%m_%Y@%H_%M_%S')
+        
+        s = str(len(self.racers)) + "\n"
+        for racer in self.racers.values():
+            s += racer.get_log()
+
+        if not os.path.exists("logs"):
+            os.makedirs("logs")
+
+        file = open(path,"w")
+        file.write(s)
+        file.close()
+
+    def load_log(self, path):
+        try:
+            file = open(path,"r")
+
+            n_racers = int(file.readline()[:-1])
+
+            for i in range(0,n_racers):
+                name = file.readline()[:-1]
+                racer_id = self.add_racer(name)
+
+                n_laps = int(file.readline()[:-1])
+                for i in range(0,n_laps):
+                    line = file.readline()[:-1]
+                    line = line.split()
+
+                    begin = float(line[0])
+                    time = float(line[1])
+
+                    self.add_lap(racer_id, time, begin)
+            
+            file.close()
+        except:
+            print("Error: Failed to load data correctly.")

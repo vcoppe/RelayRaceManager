@@ -1,10 +1,22 @@
 import tkinter as tk
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import filedialog
 from manager import Manager
 import time
+import datetime
 
 title_font = ("Helvetica", 12, 'bold')
+base_font = ("Helvetica", 12)
+button_font = ("Helvetica", 13)
 timer_font = ("Helvetica", 60, 'bold')
-bg_color = 'white'
+cur_font = ("Helvetica", 30)
+bg_color = None
+
+LOG_INTERVAL = 20 * 60 # seconds
 
 def convert(t):
     m = t // 60
@@ -12,13 +24,23 @@ def convert(t):
     s = t // 1
     return "%02d:%02d" % (m, s)
 
+def center(toplevel):
+    toplevel.update_idletasks()
+    sw = toplevel.winfo_screenwidth()
+    sh = toplevel.winfo_screenheight()
+    ww = toplevel.winfo_width()
+    wh = toplevel.winfo_height()
+    x = sw//2 - ww//2
+    y = sh//2 - wh//2
+    toplevel.geometry("{}x{}+{}+{}".format(ww, wh, x, y))
+    
 class AddRacer(tk.Frame):
 
     def __init__(self, master):
         super().__init__(master)
         self.parent = master
         self.name = tk.Label(self, text="Ajouter un coureur", font=title_font)
-        self.textfield = tk.Entry(self)
+        self.textfield = tk.Entry(self, font=base_font)
 
         def callback(event=None):
             racer = self.textfield.get()
@@ -29,12 +51,25 @@ class AddRacer(tk.Frame):
             self.textfield.delete(0, 'end')
             self.parent.update()
         
-        self.validate = tk.Button(self, text="OK", command=callback)
+        self.validate = tk.Button(self, text="OK", command=callback, font=button_font)
         self.textfield.bind("<Key-Return>", callback)
         
         self.name.grid(row=0, column=0, columnspan=2)
         self.textfield.grid(row=1, column=0)
         self.validate.grid(row=1, column=1)
+
+        def load_file():
+            path = filedialog.askopenfilename(initialdir = "logs",title = "Choisir un fichier")
+            self.parent.manager.load_log(path)
+
+        self.load = tk.Button(self, text="Charger depuis un fichier", command=load_file, font=button_font)
+        self.load.grid(row=2, column=0, columnspan=2)
+
+        def save_file():
+            self.parent.manager.print_log()
+
+        self.save = tk.Button(self, text="Sauver les données", command=save_file, font=button_font)
+        self.save.grid(row=3, column=0, columnspan=2)
 
     def update(self):
         pass
@@ -79,21 +114,63 @@ class AllRacers(tk.Frame):
             viewer.title("Stats de %s" % racer)
 
             scroll = tk.Scrollbar(viewer, orient=tk.VERTICAL)
-            scroll.grid(row=0, column=1, sticky=tk.N+tk.S)
+            scroll.grid(row=1, column=1, rowspan=2, sticky=tk.N+tk.S, pady=(0,10))
 
-            listbox = tk.Listbox(viewer, height=30, width=120, yscrollcommand=scroll.set)
-            listbox.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+            legend = tk.Label(viewer, text=" #     Heure  Temps", font=base_font)
+            legend.grid(row=0, column=0, sticky=tk.W, padx=(10,0))
+
+            listbox = tk.Listbox(viewer, height=30, width=20, yscrollcommand=scroll.set, borderwidth=0, highlightthickness=0, font=base_font)
+            listbox.grid(row=1, column=0, rowspan=2, sticky=tk.N+tk.S+tk.E+tk.W, padx=(10,0), pady=(0,10))
             scroll['command'] = listbox.yview
 
+            avg = tk.Label(viewer, text="Moyenne", font=title_font)
+            avg.grid(row=0, column=2, sticky=tk.S, pady=(10,0))
+
+
+            mean_time = self.parent.manager.racers[self.parent.manager.racers_id[racer]].mean_time()
+            dispavg = tk.Label(viewer, text=convert(mean_time), font=base_font)
+            dispavg.grid(row=1, column=2, sticky=tk.N)
+
+            best = tk.Label(viewer, text="Meilleur", font=title_font)
+            best.grid(row=0, column=3, sticky=tk.S, pady=(10,0))
+
+            dispbest = tk.Label(viewer, text=convert(self.parent.manager.racers[self.parent.manager.racers_id[racer]].best_time()), font=base_font)
+            dispbest.grid(row=1, column=3, sticky=tk.N)
+
             laps = []
+            x = []
+            y = []
+            z = []
             for lap in self.parent.manager.racers[self.parent.manager.racers_id[racer]].laps.values():
                 laps.append((lap.time, lap.begin))
+                x.append(datetime.datetime.fromtimestamp(lap.begin))
+                y.append(lap.time)
+                z.append(mean_time)
 
             count = 1
             for lap in laps:
-                out = ("%003d" % count) + ". " + str(time.strftime("%H:%M", time.localtime(lap[1]))) + " " + convert(lap[0])
+                out = ("%003d" % count) + ".  " + str(time.strftime("%H:%M", time.localtime(lap[1]))) + "    " + convert(lap[0])
                 listbox.insert(tk.END, out)
                 count += 1
+
+            fig = Figure()
+            ax = fig.add_subplot(111)
+            ax.set_title("Historique des temps")
+            line1 = ax.plot(x, y, label="Evolution")
+            line2 = ax.plot(x, z, label="Moyenne")
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles, labels)
+            ax.set_xlabel('Heure')
+            ax.set_ylabel('Temps')
+            fig.autofmt_xdate()
+            formatter = matplotlib.ticker.FuncFormatter(lambda s, x: time.strftime('%M:%S', time.gmtime(s)))
+            ax.yaxis.set_major_formatter(formatter)
+
+            canvas = FigureCanvasTkAgg(fig, viewer)
+            canvas._tkcanvas.grid(row=2, column=2, columnspan=2, sticky=tk.N)
+            canvas.show()
+            
+            center(viewer)
 
         def callback3():
             if len(self.listbox2.curselection()) == 0:
@@ -108,25 +185,60 @@ class AllRacers(tk.Frame):
             self.listbox2.activate(racer)
             self.listbox2.see(racer)
 
-        self.detail = tk.Button(self, text="Détail", command=callback2)
-        self.add = tk.Button(self, text="Ajouter", command=callback)
-        self.delete = tk.Button(self, text="Supprimer", command=callback3)
+        def callback4():
+            if len(self.list) == 0:
+                return
+            if len(self.listbox.curselection()) == 0:
+                return
+            racer = self.list[self.listbox.curselection()[0]]
+            if racer not in self.parent.manager.racers_id:
+                return
+
+            viewer = tk.Toplevel(self)
+            viewer.title("Modifier coureur")
+
+            name = tk.Entry(viewer, font=base_font)
+            name.insert(tk.END, racer)
+            name.grid(row=0, column=0, sticky=tk.E)
+
+            def val():
+                newracer = name.get()
+                newracer = newracer.replace(" ", "_")
+                if len(newracer) == 0:
+                   return
+                if newracer == racer:
+                    viewer.destroy()
+                if newracer in self.parent.manager.racers_id:
+                    return
+                self.parent.manager.rename_racer(racer, newracer)
+                viewer.destroy()
+
+            validate = tk.Button(viewer, text="OK", command=val, font=button_font)
+            validate.grid(row=0, column=1, sticky=tk.W)
+            
+            center(viewer)
+
+        self.detail = tk.Button(self, text="Détail", command=callback2, font=button_font)
+        self.add = tk.Button(self, text="Ajouter", command=callback, font=button_font)
+        self.delete = tk.Button(self, text="Supprimer", command=callback3, font=button_font)
+        self.modify = tk.Button(self, text="Modifier", command=callback4, font=button_font)
 
         self.scroll = tk.Scrollbar(self, orient=tk.VERTICAL)
-        self.scroll.grid(row=1, column=1, rowspan=3, sticky=tk.N+tk.S)
+        self.scroll.grid(row=1, column=1, rowspan=4, sticky=tk.N+tk.S)
 
-        self.listbox = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll.set)
-        self.listbox.grid(row=1, column=0, rowspan=3, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.listbox = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll.set, font=base_font)
+        self.listbox.grid(row=1, column=0, rowspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
         self.scroll['command'] = self.listbox.yview
-        self.detail.grid(row=3, column=2, sticky=tk.N)
+        self.detail.grid(row=4, column=2, sticky=tk.N)
         self.delete.grid(row=2, column=2, padx=20)
         self.add.grid(row=1, column=2, sticky=tk.S)
+        self.modify.grid(row=3, column=2)
 
         self.scroll2 = tk.Scrollbar(self, orient=tk.VERTICAL)
-        self.scroll2.grid(row=1, column=4, rowspan=3, sticky=tk.N+tk.S)
+        self.scroll2.grid(row=1, column=4, rowspan=4, sticky=tk.N+tk.S)
 
-        self.listbox2 = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll2.set)
-        self.listbox2.grid(row=1, column=3, rowspan=3, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.listbox2 = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll2.set, font=base_font)
+        self.listbox2.grid(row=1, column=3, rowspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
         self.scroll2['command'] = self.listbox2.yview
         self.listbox2.bind('<KeyPress-Up>', self.up)
         self.listbox2.bind('<KeyPress-Down>', self.down)
@@ -213,25 +325,18 @@ class LastLaps(tk.Frame):
             lap = self.list[self.listbox.curselection()[0]]
             
             viewer = tk.Toplevel(self)
-            w = 260
-            h = 60
-
-            x = (ws/2) - (w/2)
-            y = (hs/2) - (h/2)
-            
-            viewer.geometry('%dx%d+%d+%d' % (w, h, x, y))
             viewer.title("Modifier un tour")
 
-            tk.Label(viewer, text="Coureur").grid(row=0, column=0, sticky=tk.W)
-            tk.Label(viewer, text="Temps").grid(row=1, column=0, sticky=tk.W)
+            tk.Label(viewer, text="Coureur", font=title_font).grid(row=0, column=0, sticky=tk.W)
+            tk.Label(viewer, text="Temps", font=title_font).grid(row=1, column=0, sticky=tk.W)
             tk.Label(viewer, text=":").grid(row=1, column=2)
 
-            racer = tk.Entry(viewer)
+            racer = tk.Entry(viewer, font=base_font)
             racer.insert(tk.END, self.parent.manager.racers[lap[1]].name)
             racer.grid(row=0, column=1, columnspan=3)
 
-            mins = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6)
-            secs = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6)
+            mins = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6, font=base_font)
+            secs = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6, font=base_font)
 
             t = self.parent.manager.racers[lap[1]].laps[lap[0]].time
 
@@ -255,10 +360,12 @@ class LastLaps(tk.Frame):
                 
                 self.parent.update()
 
-            tk.Button(viewer, text="OK", command=mod).grid(row=0, column=4, rowspan=2)
+            tk.Button(viewer, text="OK", command=mod, font=button_font).grid(row=0, column=4, rowspan=2)
 
             mins.grid(row=1, column=1)
             secs.grid(row=1, column=3)
+            
+            center(viewer)
             
             self.parent.update()
 
@@ -271,10 +378,10 @@ class LastLaps(tk.Frame):
             self.parent.manager.del_lap(lap[1], lap[0])
             self.parent.update()
         
-        self.edit = tk.Button(self, text="Modifier", command=callback)       
-        self.delete = tk.Button(self, text="Supprimer", command=callback2)
+        self.edit = tk.Button(self, text="Modifier", command=callback, font=button_font)       
+        self.delete = tk.Button(self, text="Supprimer", command=callback2, font=button_font)
 
-        self.listbox = tk.Listbox(self, height=Manager.LAST_LAPS_SZ, width=20, borderwidth=0, highlightthickness=0)
+        self.listbox = tk.Listbox(self, height=Manager.LAST_LAPS_SZ, width=20, borderwidth=0, highlightthickness=0, font=base_font)
         self.listbox.grid(row=1, column=0, columnspan=2)
         
         self.name.grid(row=0, column=0, columnspan=2)
@@ -289,7 +396,7 @@ class LastLaps(tk.Frame):
         self.listbox.delete(0, tk.END)
         for (l_id, r_id) in reversed(self.parent.manager.last_laps):
             racer = self.parent.manager.racers[r_id]
-            out = "%s %s\n" % (convert(racer.laps[l_id].time), racer.name)
+            out = "%s %s" % (convert(racer.laps[l_id].time), racer.name)
             self.listbox.insert(tk.END, out)
 
         self.list = list(reversed(self.parent.manager.last_laps))
@@ -318,17 +425,17 @@ class Timing(tk.Frame):
             self.parent.manager.stay_lap()
             self.parent.update()
         
-        self.start = tk.Button(self, text="Start", command=start)
-        self.startstop = tk.Button(self, text="Stop & Start", command=stop)
-        self.stop = tk.Button(self, text="Stop", command=stop)
-        self.stay = tk.Button(self, text="Ding ding ding ding ding !", command=stay)
+        self.start = tk.Button(self, text="Start", command=start, font=button_font)
+        self.startstop = tk.Button(self, text="Stop & Start", command=stop, font=button_font)
+        self.stop = tk.Button(self, text="Stop", command=stop, font=button_font)
+        self.stay = tk.Button(self, text="Ding ding ding ding ding !", command=stay, font=button_font)
         self.cur = tk.Label(self)
-        self.cur.config(text="-", font=("Helvetica", 30))
+        self.cur.config(text="-", font=cur_font)
         
         self.time.grid(row=1, column=0, columnspan=3)
-        self.start.grid(row=2, column=0)
+        self.start.grid(row=2, column=0, sticky=tk.E)
         self.startstop.grid(row=2, column=1)
-        self.stop.grid(row=2, column=2)
+        self.stop.grid(row=2, column=2, sticky=tk.W)
         self.stay.grid(row=3, column=0, columnspan=3)
         self.cur.grid(row=0, column=0, columnspan=3)
 
@@ -347,23 +454,30 @@ class MainStats(tk.Frame):
         super().__init__(master)
         self.parent = master
         self.name = tk.Label(self, text="Stats", font=title_font)
-        self.e1 = tk.Label(self, text="Tours")
-        self.e2 = tk.Label(self, text=str(self.parent.manager.count))
-        self.e3 = tk.Label(self, text="Moyenne")
-        self.e4 = tk.Label(self, text=convert(self.parent.manager.mean_time()))
+        self.e1 = tk.Label(self, text="Tours", font=base_font)
+        self.e2 = tk.Label(self, text=str(self.parent.manager.count), font=base_font)
+        self.e3 = tk.Label(self, text="Moyenne", font=base_font)
+        self.e4 = tk.Label(self, text=convert(self.parent.manager.mean_time()), font=base_font)
 
         def callback():
             viewer = tk.Toplevel(self)
             viewer.title("Troupe des Dragons")
 
             scroll = tk.Scrollbar(viewer, orient=tk.VERTICAL)
-            scroll.grid(row=0, column=1, sticky=tk.N+tk.S)
+            scroll.grid(row=1, column=1, sticky=tk.N+tk.S, pady=(0,10))
 
-            listbox = tk.Listbox(viewer, height=30, width=120, yscrollcommand=scroll.set)
-            listbox.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+            legend = tk.Label(viewer, text=" #     Heure  Temps    Coureur", font=base_font)
+            legend.grid(row=0, column=0, sticky=tk.W, padx=(10,0))
+
+            listbox = tk.Listbox(viewer, height=30, width=40, yscrollcommand=scroll.set, borderwidth=0, highlightthickness=0, font=base_font)
+            listbox.grid(row=1, column=0, sticky=tk.N+tk.S+tk.E+tk.W, padx=(10,0), pady=(0,10))
             scroll['command'] = listbox.yview
 
+            mean_time = self.parent.manager.mean_time()
             laps = []
+            x = []
+            y = []
+            z = []
             for racer in self.parent.manager.racers.values():
                 for lap in racer.laps.values():
                     laps.append((lap.begin, lap.time, racer.name))
@@ -371,11 +485,33 @@ class MainStats(tk.Frame):
             laps.sort()
             count = 1
             for lap in laps:
-                out = ("%003d" % count) + ". " + str(time.strftime("%H:%M", time.localtime(lap[0]))) + " " + convert(lap[1]) + " " + lap[2]
+                out = ("%003d" % count) + ".  " + str(time.strftime("%H:%M", time.localtime(lap[0]))) + "    " + convert(lap[1]) + "     " + lap[2]
                 listbox.insert(tk.END, out)
                 count += 1
+                x.append(datetime.datetime.fromtimestamp(lap[0]))
+                y.append(lap[1])
+                z.append(mean_time)
+
+            fig = Figure()
+            ax = fig.add_subplot(111)
+            ax.set_title("Historique des temps")
+            line1 = ax.plot(x, y, label="Evolution")
+            line2 = ax.plot(x, z, label="Moyenne")
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles, labels)
+            ax.set_xlabel('Heure')
+            ax.set_ylabel('Temps')
+            fig.autofmt_xdate()
+            formatter = matplotlib.ticker.FuncFormatter(lambda s, x: time.strftime('%M:%S', time.gmtime(s)))
+            ax.yaxis.set_major_formatter(formatter)
+
+            canvas = FigureCanvasTkAgg(fig, viewer)
+            canvas._tkcanvas.grid(row=0, column=2, rowspan=2)
+            canvas.show()
+            
+            center(viewer)
         
-        self.all = tk.Button(self, text="Voir tous les tours", command=callback)
+        self.all = tk.Button(self, text="Voir tous les tours", command=callback, font=button_font)
 
         self.name.grid(row=0, column=0, columnspan=2)
         self.e1.grid(row=1, column=0, sticky='W', padx=20)
@@ -395,7 +531,7 @@ class TopLaps(tk.Frame):
         self.parent = master
         tk.Label(self, text="Meilleurs tours", font=title_font).grid(row=0, column=0)
 
-        self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black')
+        self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black', font=base_font)
         self.listbox.grid(row=1, column=0)
 
     def update(self):
@@ -424,7 +560,7 @@ class TopRacers(tk.Frame):
         self.parent = master
         tk.Label(self, text="Nombre de tours", font=title_font).grid(row=0, column=0)
 
-        self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black')
+        self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black', font=base_font)
         self.listbox.grid(row=1, column=0)
 
     def update(self):
@@ -483,6 +619,10 @@ class GUI(tk.Frame):
         self.add_racer.grid(row=0, column=2, padx=20, pady=20)
         self.last_laps.grid(row=1, column=2, rowspan=2, padx=20, pady=10)
 
+        self.log_time = time.time()
+        
+        center(master)
+
         self.upd()
 
     def update(self):
@@ -496,6 +636,9 @@ class GUI(tk.Frame):
         self.top_racers.update()
 
     def upd(self):
+        if time.time() - self.log_time > LOG_INTERVAL:
+            self.manager.print_log()
+            self.log_time = time.time()
 
         self.add_racer.update()
         self.all_racers.update()
@@ -523,7 +666,12 @@ y = (hs/2) - (h/2)
 
 # set the dimensions of the screen 
 # and where it is placed
-root.geometry('%dx%d+%d+%d' % (w, h, x, y))
 root.config(bg = bg_color)
 gui = GUI(root)
-gui.mainloop()
+while True:
+    try:
+        gui.mainloop()
+        break
+    except UnicodeDecodeError:
+        pass
+
