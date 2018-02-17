@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from racer import Racer
 from lap import Lap
 from timer import Timer
