@@ -422,15 +422,21 @@ class Timing(tk.Frame):
             self.parent.update()
 
         def stopstart():
+            if not self.running:
+                return
             self.parent.manager.end_lap()
             self.parent.update()
 
         def stop():
+            if not self.running:
+                return
             self.parent.manager.end_lap()
             self.running = False
             self.parent.update()
 
         def stay():
+            if not self.running:
+                return
             self.parent.manager.stay_lap()
             self.parent.update()
         
