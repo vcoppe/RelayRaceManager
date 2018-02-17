@@ -411,15 +411,23 @@ class Timing(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.parent = master
+
+        self.running = False
         
         self.time = tk.Label(self, text=convert(self.parent.manager.timer.elapsed()), font=timer_font)
 
         def start():
             self.parent.manager.start_lap()
+            self.running = True
+            self.parent.update()
+
+        def stopstart():
+            self.parent.manager.end_lap()
             self.parent.update()
 
         def stop():
             self.parent.manager.end_lap()
+            self.running = False
             self.parent.update()
 
         def stay():
@@ -427,7 +435,7 @@ class Timing(tk.Frame):
             self.parent.update()
         
         self.start = tk.Button(self, text="Start", command=start, font=button_font)
-        self.startstop = tk.Button(self, text="Stop & Start", command=stop, font=button_font)
+        self.startstop = tk.Button(self, text="Stop & Start", command=stopstart, font=button_font)
         self.stop = tk.Button(self, text="Stop", command=stop, font=button_font)
         self.stay = tk.Button(self, text="Ding ding ding ding ding !", command=stay, font=button_font)
         self.cur = tk.Label(self)
@@ -441,7 +449,10 @@ class Timing(tk.Frame):
         self.cur.grid(row=0, column=0, columnspan=3)
 
     def update(self):
-        self.time.config(text=convert(self.parent.manager.timer.elapsed()))
+        if self.running:
+            self.time.config(text=convert(self.parent.manager.timer.elapsed()))
+        else:
+            self.time.config(text=convert(0))
         for racer_id in self.parent.manager.queue:
             self.cur.config(text=">>> "+self.parent.manager.racers[racer_id].name+" <<<")
             break
