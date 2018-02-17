@@ -336,8 +336,8 @@ class LastLaps(tk.Frame):
             racer.insert(tk.END, self.parent.manager.racers[lap[1]].name)
             racer.grid(row=0, column=1, columnspan=3)
 
-            mins = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6, font=base_font)
-            secs = tk.Spinbox(viewer, format="%2.0f", from_=0, to=59, increment=1, width=6, font=base_font)
+            mins = tk.Spinbox(viewer, format="%02.0f", from_=0.0, to=59.0, increment=1, width=6, font=base_font)
+            secs = tk.Spinbox(viewer, format="%02.0f", from_=0.0, to=59.0, increment=1, width=6, font=base_font)
 
             t = self.parent.manager.racers[lap[1]].laps[lap[0]].time
 
