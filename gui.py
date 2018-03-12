@@ -387,8 +387,8 @@ class LastLaps(tk.Frame):
         self.listbox.grid(row=1, column=0, columnspan=2)
         
         self.name.grid(row=0, column=0, columnspan=2)
-        self.edit.grid(row=2, column=0, sticky=tk.E)
-        self.delete.grid(row=2, column=1, sticky=tk.W)
+        self.edit.grid(row=2, column=0, sticky=tk.E, pady=(0,5))
+        self.delete.grid(row=2, column=1, sticky=tk.W, pady=(0,5))
 
     def update(self):
         index = -1
@@ -452,7 +452,7 @@ class Timing(tk.Frame):
         self.start.grid(row=2, column=0, sticky=tk.E)
         self.startstop.grid(row=2, column=1)
         self.stop.grid(row=2, column=2, sticky=tk.W)
-        self.stay.grid(row=3, column=0, columnspan=3)
+        self.stay.grid(row=3, column=0, columnspan=3, pady=(0,5))
         self.cur.grid(row=0, column=0, columnspan=3)
 
     def update(self):
