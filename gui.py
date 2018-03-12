@@ -57,15 +57,15 @@ class AddRacer(tk.Frame):
         self.textfield.bind("<Key-Return>", callback)
         
         self.name.grid(row=0, column=0, columnspan=2, sticky=tk.S)
-        self.textfield.grid(row=1, column=0, padx=(5,0))
-        self.validate.grid(row=1, column=1, padx=(0,5))
+        self.textfield.grid(row=1, column=0, padx=(5,0), sticky=tk.N+tk.E)
+        self.validate.grid(row=1, column=1, padx=(0,5), sticky=tk.N+tk.W)
 
         def load_file():
             path = filedialog.askopenfilename(initialdir = "logs",title = "Choisir un fichier")
             self.parent.manager.load_log(path)
 
         self.load = tk.Button(self, text="Charger depuis un fichier", command=load_file, font=button_font)
-        self.load.grid(row=2, column=0, columnspan=2)
+        self.load.grid(row=2, column=0, columnspan=2, sticky=tk.S)
 
         def save_file():
             self.parent.manager.print_log()
@@ -226,21 +226,21 @@ class AllRacers(tk.Frame):
         self.modify = tk.Button(self, text="Modifier", command=callback4, font=button_font)
 
         self.scroll = tk.Scrollbar(self, orient=tk.VERTICAL)
-        self.scroll.grid(row=1, column=1, rowspan=4, sticky=tk.N+tk.S)
+        self.scroll.grid(row=1, column=1, rowspan=4, pady=(0,10), sticky=tk.N+tk.S+tk.W)
 
         self.listbox = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll.set, font=base_font)
-        self.listbox.grid(row=1, column=0, rowspan=4, padx=(20, 0), sticky=tk.N+tk.S+tk.E+tk.W)
+        self.listbox.grid(row=1, column=0, rowspan=4, padx=(20, 0), pady=(0,10), sticky=tk.N+tk.S+tk.E)
         self.scroll['command'] = self.listbox.yview
         self.detail.grid(row=4, column=2, sticky=tk.N)
-        self.delete.grid(row=2, column=2, padx=20)
+        self.delete.grid(row=2, column=2, padx=20, sticky=tk.N)
         self.add.grid(row=1, column=2, sticky=tk.S)
-        self.modify.grid(row=3, column=2)
+        self.modify.grid(row=3, column=2, sticky=tk.S)
 
         self.scroll2 = tk.Scrollbar(self, orient=tk.VERTICAL)
-        self.scroll2.grid(row=1, column=4, rowspan=4, padx=(0, 20), sticky=tk.N+tk.S)
+        self.scroll2.grid(row=1, column=4, rowspan=4, padx=(0, 20), pady=(0,10), sticky=tk.N+tk.S+tk.W)
 
         self.listbox2 = tk.Listbox(self, height=20, width=20, yscrollcommand=self.scroll2.set, font=base_font)
-        self.listbox2.grid(row=1, column=3, rowspan=4, sticky=tk.N+tk.S+tk.E+tk.W)
+        self.listbox2.grid(row=1, column=3, rowspan=4, pady=(0,10), sticky=tk.N+tk.S+tk.E)
         self.scroll2['command'] = self.listbox2.yview
         self.listbox2.bind('<KeyPress-Up>', self.up)
         self.listbox2.bind('<KeyPress-Down>', self.down)
@@ -387,8 +387,8 @@ class LastLaps(tk.Frame):
         self.listbox.grid(row=1, column=0, columnspan=2)
         
         self.name.grid(row=0, column=0, columnspan=2)
-        self.edit.grid(row=2, column=0, sticky=tk.W)
-        self.delete.grid(row=2, column=1, sticky=tk.E)
+        self.edit.grid(row=2, column=0, sticky=tk.E)
+        self.delete.grid(row=2, column=1, sticky=tk.W)
 
     def update(self):
         index = -1
@@ -447,13 +447,11 @@ class Timing(tk.Frame):
         self.stay = tk.Button(self, text="Ding ding ding ding ding !", command=stay, font=button_font)
         self.cur = tk.Label(self, bg=frame_bg)
         self.cur.config(text="-", font=cur_font)
-
-        xpadding = 115
         
         self.time.grid(row=1, column=0, columnspan=3)
-        self.start.grid(row=2, column=0, padx=(xpadding, 0), sticky=tk.E)
+        self.start.grid(row=2, column=0, sticky=tk.E)
         self.startstop.grid(row=2, column=1)
-        self.stop.grid(row=2, column=2, padx=(0, xpadding), sticky=tk.W)
+        self.stop.grid(row=2, column=2, sticky=tk.W)
         self.stay.grid(row=3, column=0, columnspan=3)
         self.cur.grid(row=0, column=0, columnspan=3)
 
@@ -534,14 +532,12 @@ class MainStats(tk.Frame):
         
         self.all = tk.Button(self, text="Voir tous les tours", command=callback, font=button_font)
 
-        ypadding = 41
-
-        self.name.grid(row=0, column=0, columnspan=2, pady=(ypadding, 0))
-        self.e1.grid(row=1, column=0, sticky='W', padx=20)
-        self.e2.grid(row=1, column=1, sticky='E', padx=20)
-        self.e3.grid(row=2, column=0, sticky='W', padx=20)
-        self.e4.grid(row=2, column=1, sticky='E', padx=20)
-        self.all.grid(row=3, column=0, columnspan=2, pady=(0, ypadding))
+        self.name.grid(row=0, column=0, columnspan=2, sticky=tk.S)
+        self.e1.grid(row=1, column=0, sticky=tk.W+tk.S, padx=20)
+        self.e2.grid(row=1, column=1, sticky=tk.E+tk.S, padx=20)
+        self.e3.grid(row=2, column=0, sticky=tk.W+tk.N, padx=20)
+        self.e4.grid(row=2, column=1, sticky=tk.E+tk.N, padx=20)
+        self.all.grid(row=3, column=0, columnspan=2, sticky=tk.N)
 
     def update(self):
         self.e2.config(text=str(self.parent.manager.count))
@@ -555,7 +551,7 @@ class TopLaps(tk.Frame):
         tk.Label(self, text="Meilleurs tours", font=title_font, bg=frame_bg).grid(row=0, column=0)
 
         self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black', font=base_font)
-        self.listbox.grid(row=1, column=0, padx=24, pady=(3,5))
+        self.listbox.grid(row=1, column=0)
 
     def update(self):
         self.listbox.config(state='normal')
@@ -584,7 +580,7 @@ class TopRacers(tk.Frame):
         tk.Label(self, text="Nombre de tours", font=title_font, bg=frame_bg).grid(row=0, column=0)
 
         self.listbox = tk.Listbox(self, height=10, width=20, borderwidth=0, highlightthickness=0, state='disabled', disabledforeground='black', font=base_font)
-        self.listbox.grid(row=1, column=0, padx=24, pady=(3,5))
+        self.listbox.grid(row=1, column=0)
 
     def update(self):
         self.listbox.config(state='normal')
@@ -607,19 +603,10 @@ class GUI(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.config(bg=bg_color)
-        top=self.winfo_toplevel()
-        top.rowconfigure(0, weight=1)
-        top.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
-        self.rowconfigure(2, weight=1)
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=1)
         
         self.manager = Manager()
 
-        self.grid(row=0, column=0)
+        self.grid(row=0, column=0, sticky=tk.S+tk.N+tk.E+tk.W)
 
         self.add_racer = AddRacer(self)
         self.all_racers = AllRacers(self)
@@ -641,6 +628,61 @@ class GUI(tk.Frame):
         # right side
         self.add_racer.grid(row=0, column=2, padx=10, pady=10, sticky=tk.N+tk.S+tk.E+tk.W)
         self.last_laps.grid(row=1, column=2, rowspan=2, padx=10, pady=(0,10), sticky=tk.N+tk.S+tk.E+tk.W)
+
+        # weights
+        top=self.winfo_toplevel()
+        top.rowconfigure(0, weight=1)
+        top.columnconfigure(0, weight=1)
+
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=1)
+
+        self.main_stats.columnconfigure(0, weight=1)
+        self.main_stats.columnconfigure(1, weight=1)
+        self.main_stats.rowconfigure(0, weight=1)
+        self.main_stats.rowconfigure(1, weight=1)
+        self.main_stats.rowconfigure(2, weight=1)
+        self.main_stats.rowconfigure(3, weight=1)
+
+        self.top_laps.columnconfigure(0, weight=1)
+        self.top_laps.rowconfigure(0, weight=1)
+        self.top_laps.rowconfigure(1, weight=1)
+
+        self.top_racers.columnconfigure(0, weight=1)
+        self.top_racers.rowconfigure(0, weight=1)
+        self.top_racers.rowconfigure(1, weight=1)
+
+        self.timing.columnconfigure(0, weight=1)
+        self.timing.columnconfigure(1, weight=1)
+        self.timing.columnconfigure(2, weight=1)
+
+        self.all_racers.columnconfigure(0, weight=1)
+        self.all_racers.columnconfigure(1, weight=1)
+        self.all_racers.columnconfigure(2, weight=1)
+        self.all_racers.columnconfigure(3, weight=1)
+        self.all_racers.columnconfigure(4, weight=1)
+        self.all_racers.rowconfigure(0, weight=1)
+        self.all_racers.rowconfigure(1, weight=1)
+        self.all_racers.rowconfigure(2, weight=1)
+        self.all_racers.rowconfigure(3, weight=1)
+        self.all_racers.rowconfigure(4, weight=1)
+
+        self.add_racer.columnconfigure(0, weight=1)
+        self.add_racer.columnconfigure(1, weight=1)
+        self.add_racer.rowconfigure(0, weight=1)
+        self.add_racer.rowconfigure(1, weight=1)
+        self.add_racer.rowconfigure(2, weight=1)
+        self.add_racer.rowconfigure(3, weight=1)
+
+        self.last_laps.columnconfigure(0, weight=1)
+        self.last_laps.columnconfigure(1, weight=1)
+        self.last_laps.rowconfigure(0, weight=1)
+        self.last_laps.rowconfigure(1, weight=1)
+        self.last_laps.rowconfigure(2, weight=1)
 
         self.log_time = time.time()
         
