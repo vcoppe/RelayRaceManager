@@ -79,7 +79,7 @@ class AddRacer(tk.Frame):
 class AllRacers(tk.Frame):
 
     def __init__(self, master):
-        super().__init__(master, bg="white")
+        super().__init__(master, bg=frame_bg)
         self.parent = master
         self.list = []
         
