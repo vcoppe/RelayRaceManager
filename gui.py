@@ -15,8 +15,8 @@ base_font = ("Helvetica", 12)
 button_font = ("Helvetica", 13)
 timer_font = ("Helvetica", 60, 'bold')
 cur_font = ("Helvetica", 30)
-bg_color = "gray94"
-frame_bg = "white"
+bg_color = "gray80"
+frame_bg = None
 
 LOG_INTERVAL = 20 * 60 # seconds
 
