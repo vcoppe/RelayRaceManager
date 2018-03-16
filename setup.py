@@ -11,13 +11,13 @@ base = None
 if sys.platform == 'win32':
     base = "Win32GUI"
 
-executables = [cx_Freeze.Executable("gui.py", base=base, icon="Dragon.ico")]
+executables = [cx_Freeze.Executable("gui.py", base=base, icon="logo.ico")]
 
 cx_Freeze.setup(
     name = "Troupe des Dragons",
     options = {"build_exe": {
         "packages":["tkinter","matplotlib","numpy"],
-        "include_files":["Dragon.ico", r"tcl86t.dll", "tk86t.dll"]}},
+        "include_files":["logo.ico", r"tcl86t.dll", "tk86t.dll"]}},
     version = "0.01",
     description = "Chrono",
     executables = executables
