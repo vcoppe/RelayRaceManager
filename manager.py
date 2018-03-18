@@ -291,14 +291,16 @@ class Manager:
     Logs the current state.
     """
     def print_log(self):
-        path = "logs/" + datetime.datetime.fromtimestamp(self.timer.current()).strftime('%d_%m_%Y@%H_%M_%S')
+        dirpath = os.path.join(os.getcwd(),"logs")
+        path = os.path.join(dirpath, datetime.datetime.fromtimestamp(self.timer.current()).strftime('%d_%m_%Y@%H_%M_%S'))
         
         s = str(len(self.racers)) + "\n"
         for racer in self.racers.values():
             s += racer.get_log()
 
-        if not os.path.exists("logs"):
-            os.makedirs("logs")
+        
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
 
         file = open(path,"w")
         file.write(s)

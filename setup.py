@@ -19,6 +19,6 @@ cx_Freeze.setup(
         "packages":["tkinter","matplotlib","numpy"],
         "include_files":["logo.ico", r"tcl86t.dll", "tk86t.dll"]}},
     version = "0.01",
-    description = "Chrono",
+    description = "Chrono 24h",
     executables = executables
     )

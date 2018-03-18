@@ -9,6 +9,7 @@ from tkinter import filedialog
 from manager import Manager
 import time
 import datetime
+import os
 
 title_font = ("Helvetica", 12, 'bold')
 base_font = ("Helvetica", 12)
